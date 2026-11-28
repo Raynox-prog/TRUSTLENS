@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+:root {
+  /* OBSIDIAN GRID BASE FOUNDATION (DARK MODE MATTE ONLY) */
+  --bg-main: #080B10;
+  --bg-secondary: #0D1219;
+  --bg-elevated: #111923;
+  --bg-card: #141E29;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --text-primary: #F4F7FA;
+  --text-secondary: #A0AAB8;
+  --text-muted: #687586;
+
+  /* DEFAULT THEME 1: EMERALD FUSION (#00C987 / #9AF5C8) */
+  --theme-id: "emerald-fusion";
+  --theme-primary: #00C987;
+  --theme-secondary: #9AF5C8;
+  --theme-primary-rgb: 0, 201, 135;
+  --theme-secondary-rgb: 154, 245, 200;
+
+  /* DYNAMIC TOKENS TIED TO ACTIVE THEME */
+  --emerald-primary: var(--theme-primary);
+  --emerald-secondary: var(--theme-secondary);
+  --border-glow: rgba(var(--theme-primary-rgb), 0.28);
+  --emerald-glow: rgba(var(--theme-primary-rgb), 0.16);
+
+  --grid-line: rgba(var(--theme-primary-rgb), 0.04);
+  --grid-line-major: rgba(var(--theme-primary-rgb), 0.08);
+  --obsidian-ambient-primary: rgba(var(--theme-primary-rgb), 0.12);
+  --obsidian-ambient-secondary: rgba(var(--theme-secondary-rgb), 0.06);
+  --obsidian-vignette: rgba(8, 11, 16, 0.96);
+
+  /* Legacy mappings */
+  --forest-primary: #080B10;
+  --forest-deep: #080B10;
+  --forest-dark: #0D1219;
+  --forest-secondary: #111923;
+  --cream: #F4F7FA;
+  --beige: #A0AAB8;
+  --purple-electric: var(--theme-primary);
+  --purple-bright: var(--theme-secondary);
+  --purple-muted: var(--theme-secondary);
+
+  --obsidian-base: #080B10;
+  --obsidian-charcoal: #0D1219;
+  --obsidian-graphite: #111923;
+
+  /* SEMANTIC PALETTE */
+  --color-critical: #FF4D5E;
+  --color-critical-bg: rgba(255, 77, 94, 0.12);
+  --color-critical-border: rgba(255, 77, 94, 0.28);
+
+  --color-high: #FF8A4C;
+  --color-high-bg: rgba(255, 138, 76, 0.12);
+  --color-high-border: rgba(255, 138, 76, 0.28);
+
+  --color-medium: #F4BD50;
+  --color-medium-bg: rgba(244, 189, 80, 0.12);
+  --color-medium-border: rgba(244, 189, 80, 0.28);
+
+  --color-low: #48BFA0;
+  --color-low-bg: rgba(72, 191, 160, 0.12);
+  --color-low-border: rgba(72, 191, 160, 0.28);
+
+  --color-safe: #28D99A;
+  --color-safe-bg: rgba(40, 217, 154, 0.12);
+  --color-safe-border: rgba(40, 217, 154, 0.28);
+
+  --color-info: #63A9FF;
+  --color-info-bg: rgba(99, 169, 255, 0.12);
+  --color-info-border: rgba(99, 169, 255, 0.28);
+}
+
+/* 1. EMERALD FUSION (#00C987 / #9AF5C8) */
+html[data-theme="emerald-fusion"], :root[data-theme="emerald-fusion"] {
+  --theme-id: "emerald-fusion";
+  --theme-primary: #00C987;
+  --theme-secondary: #9AF5C8;
+  --theme-primary-rgb: 0, 201, 135;
+  --theme-secondary-rgb: 154, 245, 200;
+}
+
+/* 2. OCEAN DEPTHS (#087DFF / #42DFFF) */
+html[data-theme="ocean-depths"], :root[data-theme="ocean-depths"] {
+  --theme-id: "ocean-depths";
+  --theme-primary: #087DFF;
+  --theme-secondary: #42DFFF;
+  --theme-primary-rgb: 8, 125, 255;
+  --theme-secondary-rgb: 66, 223, 255;
+}
+
+/* 3. AMBER FORGE (#E87525 / #F5C879) */
+html[data-theme="amber-forge"], :root[data-theme="amber-forge"] {
+  --theme-id: "amber-forge";
+  --theme-primary: #E87525;
+  --theme-secondary: #F5C879;
+  --theme-primary-rgb: 232, 117, 37;
+  --theme-secondary-rgb: 245, 200, 121;
+}
+
+/* 4. ICE SILVER (#AABBD1 / #E5F5FF) */
+html[data-theme="ice-silver"], :root[data-theme="ice-silver"] {
+  --theme-id: "ice-silver";
+  --theme-primary: #AABBD1;
+  --theme-secondary: #E5F5FF;
+  --theme-primary-rgb: 170, 187, 209;
+  --theme-secondary-rgb: 229, 245, 255;
+}
+
+/* 5. CYBER TEAL (#00AFAF / #70F4E5) */
+html[data-theme="cyber-teal"], :root[data-theme="cyber-teal"] {
+  --theme-id: "cyber-teal";
+  --theme-primary: #00AFAF;
+  --theme-secondary: #70F4E5;
+  --theme-primary-rgb: 0, 175, 175;
+  --theme-secondary-rgb: 112, 244, 229;
+}
+
+/* 6. NEON GOLD (#D9A600 / #FFE36B) */
+html[data-theme="neon-gold"], :root[data-theme="neon-gold"] {
+  --theme-id: "neon-gold";
+  --theme-primary: #D9A600;
+  --theme-secondary: #FFE36B;
+  --theme-primary-rgb: 217, 166, 0;
+  --theme-secondary-rgb: 255, 227, 107;
+}
+
+@theme inline {
+  --font-heading: "Space Grotesk Variable", "Space Grotesk", sans-serif;
+  --font-sans: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+
+  --color-obsidian-bg: #080B10;
+  --color-obsidian-sub: #0D1219;
+  --color-obsidian-elevated: #111923;
+  --color-obsidian-card: #141E29;
+  --color-obsidian-border: rgba(255, 255, 255, 0.08);
+
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-secondary: var(--theme-secondary);
+  --color-emerald-primary: var(--theme-primary);
+  --color-emerald-secondary: var(--theme-secondary);
+
+  --color-text-primary: #F4F7FA;
+  --color-text-secondary: #A0AAB8;
+  --color-text-muted: #687586;
+}
+
+html {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  min-height: 100vh;
+}
+
+/* Smooth global theme transitions (300ms - 450ms with elegant easing) */
+html,
+body,
+header,
+aside,
+main,
+footer,
+nav,
+div,
+span,
+button,
+a,
+input,
+textarea,
+select,
+svg,
+circle,
+path {
+  transition-property: color, background-color, border-color, box-shadow, stroke, fill;
+  transition-duration: 350ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Explicit Typography Utility Classes */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   OBSIDIAN GRID — Surfaces and Dynamic Theme Effects
+   ========================================================================== */
+
+/* Technical background grid with dynamic theme lines */
+.obsidian-grid-bg {
+  background-color: var(--bg-main);
+  background-image: 
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.obsidian-grid-major {
+  background-image: 
+    linear-gradient(to right, var(--grid-line-major) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-major) 1px, transparent 1px);
+  background-size: 160px 160px;
+}
+
+/* Soft obsidian vignette */
+.obsidian-vignette {
+  background: radial-gradient(
+    ellipse 85% 75% at 50% 40%,
+    transparent 0%,
+    rgba(8, 11, 16, 0.45) 60%,
+    rgba(8, 11, 16, 0.95) 100%
+  );
+}
+
+/* Elevated card surfaces */
+.obsidian-card {
+  background: #141E29;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.obsidian-card-interactive {
+  background: #141E29;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.obsidian-card-interactive:hover {
+  border-color: rgba(var(--theme-primary-rgb), 0.45);
+  box-shadow: 0 12px 32px -8px rgba(var(--theme-primary-rgb), 0.18);
+  transform: translateY(-1px);
+}
+
+/* Backward-compatible card styles transformed into Obsidian Grid */
+.shieldly-cream-card {
+  background: #141E29 !important;
+  color: #F4F7FA !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+.shieldly-purple-card {
+  background: #111923 !important;
+  color: #F4F7FA !important;
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.35) !important;
+  box-shadow: 0 16px 40px -10px rgba(var(--theme-primary-rgb), 0.18) !important;
+}
+
+.shieldly-glass {
+  background: rgba(13, 18, 25, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.shieldly-glass-soft {
+  background: rgba(17, 25, 35, 0.75) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Liquid Glass Navbar & Floating Surface */
+.liquid-glass-surface {
+  background: rgba(13, 18, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Specular luminous edge highlight */
+.luminous-edge {
+  position: relative;
+}
+.luminous-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.35) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Custom technical scrollbar styled with active theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080B10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1A2634;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
