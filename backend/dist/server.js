@@ -1,27 +1,22 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-require("dotenv/config");
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const multer_1 = __importDefault(require("multer"));
-const zod_1 = require("zod");
-const rate_limit_1 = require("./lib/rate-limit");
-const ssrf_1 = require("./lib/ssrf");
-const ai_service_1 = require("./lib/ai-service");
-const image_validator_1 = require("./lib/image-validator");
-const reports_repo_1 = require("./lib/reports-repo");
-const pdf_generator_1 = require("./lib/pdf-generator");
-const types_1 = require("./lib/types");
-const app = (0, express_1.default)();
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import { z } from "zod";
+import { checkExpressRateLimit } from "./lib/rate-limit.js";
+import { normalizeAndValidatePublicUrl } from "./lib/ssrf.js";
+import { analyzeUrlWithAI, analyzeTextWithAI, analyzeImageWithAI, getServerCapabilities, } from "./lib/ai-service.js";
+import { MAX_IMAGE_BYTES, validateUploadedImage, } from "./lib/image-validator.js";
+import { saveAnalysisReport, getReportById, getLatestReport, deleteReportById, deleteAllReports, getDashboardData, } from "./lib/reports-repo.js";
+import { generateReportPdfBuffer } from "./lib/pdf-generator.js";
+import { AnalysisTypeSchema, ConfidenceSchema, DetectedThreatSchema, RiskLevelSchema, } from "./lib/types.js";
+const app = express();
 const PORT = process.env.PORT || 5000;
 // Trust reverse proxies (Render, Cloudflare, etc.)
 app.set("trust proxy", 1);
 // Configure CORS
 const allowedOrigins = process.env.CORS_ORIGIN || "*";
-app.use((0, cors_1.default)({
+app.use(cors({
     origin: (origin, callback) => {
         if (allowedOrigins === "*" || !origin) {
             callback(null, true);
@@ -40,13 +35,13 @@ app.use((0, cors_1.default)({
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
-app.use(express_1.default.json({ limit: "15mb" }));
-app.use(express_1.default.urlencoded({ extended: true, limit: "15mb" }));
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 // Configure multer for screenshot uploads in memory
-const upload = (0, multer_1.default)({
-    storage: multer_1.default.memoryStorage(),
+const upload = multer({
+    storage: multer.memoryStorage(),
     limits: {
-        fileSize: image_validator_1.MAX_IMAGE_BYTES,
+        fileSize: MAX_IMAGE_BYTES,
     },
 });
 function getClientIp(req) {
@@ -60,22 +55,22 @@ function getClientIp(req) {
 app.get(["/", "/health", "/api/health"], (_req, res) => {
     res.json({
         status: "ok",
-        service: "SHIELDLY AI Backend API",
+        service: "AVERON AI Backend API",
         version: "2.0.0",
         engine: "Zero-Trust Threat Defense Engine",
         timestamp: new Date().toISOString(),
     });
 });
 app.get("/api/status", (_req, res) => {
-    const capabilities = (0, ai_service_1.getServerCapabilities)();
+    const capabilities = getServerCapabilities();
     res.json({
         status: "success",
         capabilities,
     });
 });
 // ─── POST /api/analyze/url ───────────────────────────────────────────────────
-const UrlRequestSchema = zod_1.z.object({
-    url: zod_1.z
+const UrlRequestSchema = z.object({
+    url: z
         .string()
         .trim()
         .min(4, "Please enter a website URL to inspect.")
@@ -83,7 +78,7 @@ const UrlRequestSchema = zod_1.z.object({
 });
 app.post("/api/analyze/url", async (req, res) => {
     const ip = getClientIp(req);
-    const rate = (0, rate_limit_1.checkExpressRateLimit)(ip, "analyze-url", 30, 60_000);
+    const rate = checkExpressRateLimit(ip, "analyze-url", 30, 60_000);
     if (!rate.allowed) {
         res.status(429).json({
             status: "error",
@@ -99,7 +94,7 @@ app.post("/api/analyze/url", async (req, res) => {
         });
         return;
     }
-    const validated = (0, ssrf_1.normalizeAndValidatePublicUrl)(parsed.data.url);
+    const validated = normalizeAndValidatePublicUrl(parsed.data.url);
     if (!validated.ok) {
         res.status(400).json({
             status: "error",
@@ -109,9 +104,9 @@ app.post("/api/analyze/url", async (req, res) => {
     }
     const startedAt = Date.now();
     try {
-        const { output, metadata } = await (0, ai_service_1.analyzeUrlWithAI)(parsed.data.url, validated.url);
+        const { output, metadata } = await analyzeUrlWithAI(parsed.data.url, validated.url);
         const durationMs = Math.max(1, Date.now() - startedAt);
-        const saved = await (0, reports_repo_1.saveAnalysisReport)({
+        const saved = await saveAnalysisReport({
             analysisType: "url",
             inputSummary: validated.url.toString(),
             output,
@@ -130,8 +125,8 @@ app.post("/api/analyze/url", async (req, res) => {
     }
 });
 // ─── POST /api/analyze/text ──────────────────────────────────────────────────
-const TextRequestSchema = zod_1.z.object({
-    text: zod_1.z
+const TextRequestSchema = z.object({
+    text: z
         .string()
         .trim()
         .min(5, "Please enter at least 5 characters of message text to analyze.")
@@ -139,7 +134,7 @@ const TextRequestSchema = zod_1.z.object({
 });
 app.post("/api/analyze/text", async (req, res) => {
     const ip = getClientIp(req);
-    const rate = (0, rate_limit_1.checkExpressRateLimit)(ip, "analyze-text", 30, 60_000);
+    const rate = checkExpressRateLimit(ip, "analyze-text", 30, 60_000);
     if (!rate.allowed) {
         res.status(429).json({
             status: "error",
@@ -157,11 +152,11 @@ app.post("/api/analyze/text", async (req, res) => {
     }
     const startedAt = Date.now();
     try {
-        const { output, metadata } = await (0, ai_service_1.analyzeTextWithAI)(parsed.data.text);
+        const { output, metadata } = await analyzeTextWithAI(parsed.data.text);
         const durationMs = Math.max(1, Date.now() - startedAt);
         const preview = parsed.data.text.replace(/\s+/g, " ").trim();
         const inputSummary = preview.length > 260 ? `${preview.slice(0, 257)}...` : preview;
-        const saved = await (0, reports_repo_1.saveAnalysisReport)({
+        const saved = await saveAnalysisReport({
             analysisType: "text",
             inputSummary,
             output,
@@ -182,7 +177,7 @@ app.post("/api/analyze/text", async (req, res) => {
 // ─── POST /api/analyze/image ─────────────────────────────────────────────────
 app.post("/api/analyze/image", upload.fields([{ name: "file", maxCount: 1 }, { name: "image", maxCount: 1 }]), async (req, res) => {
     const ip = getClientIp(req);
-    const rate = (0, rate_limit_1.checkExpressRateLimit)(ip, "analyze-image", 20, 60_000);
+    const rate = checkExpressRateLimit(ip, "analyze-image", 20, 60_000);
     if (!rate.allowed) {
         res.status(429).json({
             status: "error",
@@ -199,7 +194,7 @@ app.post("/api/analyze/image", upload.fields([{ name: "file", maxCount: 1 }, { n
         });
         return;
     }
-    if (fileEntry.size > image_validator_1.MAX_IMAGE_BYTES) {
+    if (fileEntry.size > MAX_IMAGE_BYTES) {
         res.status(413).json({
             status: "error",
             error: "Image exceeds maximum allowed size of 8 MB.",
@@ -213,12 +208,12 @@ app.post("/api/analyze/image", upload.fields([{ name: "file", maxCount: 1 }, { n
     const startedAt = Date.now();
     try {
         const buffer = fileEntry.buffer;
-        const validated = (0, image_validator_1.validateUploadedImage)(buffer, fileEntry.mimetype, fileEntry.originalname);
+        const validated = validateUploadedImage(buffer, fileEntry.mimetype, fileEntry.originalname);
         if (!validated.ok) {
             res.status(400).json({ status: "error", error: validated.error });
             return;
         }
-        const { output, metadata } = await (0, ai_service_1.analyzeImageWithAI)({
+        const { output, metadata } = await analyzeImageWithAI({
             buffer,
             mimeType: validated.canonicalMime,
             details: validated.details,
@@ -232,7 +227,7 @@ app.post("/api/analyze/image", upload.fields([{ name: "file", maxCount: 1 }, { n
         const inputSummary = contextNote
             ? `${baseSummary} - ${contextNote.slice(0, 160)}`
             : baseSummary;
-        const saved = await (0, reports_repo_1.saveAnalysisReport)({
+        const saved = await saveAnalysisReport({
             analysisType: "image",
             inputSummary,
             output,
@@ -251,40 +246,40 @@ app.post("/api/analyze/image", upload.fields([{ name: "file", maxCount: 1 }, { n
     }
 });
 // ─── POST /api/report (PDF Export) ───────────────────────────────────────────
-const InlineReportSchema = zod_1.z.object({
-    id: zod_1.z.string().min(1).max(100).default("unsaved"),
-    analysisType: types_1.AnalysisTypeSchema,
-    inputSummary: zod_1.z.string().min(1).max(500),
-    riskLevel: types_1.RiskLevelSchema,
-    riskScore: zod_1.z.number().int().min(0).max(100),
-    verdict: zod_1.z.string().min(1).max(400),
-    summary: zod_1.z.string().min(1).max(2000),
-    detectedThreats: zod_1.z.array(types_1.DetectedThreatSchema).max(25),
-    recommendations: zod_1.z.array(zod_1.z.string().min(1).max(500)).max(15),
-    confidence: types_1.ConfidenceSchema,
-    limitations: zod_1.z.array(zod_1.z.string().min(1).max(500)).max(15),
-    durationMs: zod_1.z.number().int().min(0).default(0),
-    createdAt: zod_1.z.string().optional(),
-    metadata: zod_1.z
+const InlineReportSchema = z.object({
+    id: z.string().min(1).max(100).default("unsaved"),
+    analysisType: AnalysisTypeSchema,
+    inputSummary: z.string().min(1).max(500),
+    riskLevel: RiskLevelSchema,
+    riskScore: z.number().int().min(0).max(100),
+    verdict: z.string().min(1).max(400),
+    summary: z.string().min(1).max(2000),
+    detectedThreats: z.array(DetectedThreatSchema).max(25),
+    recommendations: z.array(z.string().min(1).max(500)).max(15),
+    confidence: ConfidenceSchema,
+    limitations: z.array(z.string().min(1).max(500)).max(15),
+    durationMs: z.number().int().min(0).default(0),
+    createdAt: z.string().optional(),
+    metadata: z
         .object({
-        engineLabel: zod_1.z.string().default("SHIELDLY Analysis Engine"),
-        aiProviderUsed: zod_1.z
+        engineLabel: z.string().default("AVERON Analysis Engine"),
+        aiProviderUsed: z
             .enum(["gemini", "openai", "heuristic-only"])
             .default("heuristic-only"),
-        aiModel: zod_1.z.string().nullable().default(null),
-        aiFallbackReason: zod_1.z.string().nullable().default(null),
-        externalReputationChecked: zod_1.z.boolean().default(false),
+        aiModel: z.string().nullable().default(null),
+        aiFallbackReason: z.string().nullable().default(null),
+        externalReputationChecked: z.boolean().default(false),
     })
         .optional(),
 });
-const ReportRequestSchema = zod_1.z.union([
-    zod_1.z.object({ reportId: zod_1.z.string() }),
-    zod_1.z.object({ report: InlineReportSchema }),
+const ReportRequestSchema = z.union([
+    z.object({ reportId: z.string() }),
+    z.object({ report: InlineReportSchema }),
     InlineReportSchema,
 ]);
 app.post("/api/report", async (req, res) => {
     const ip = getClientIp(req);
-    const rate = (0, rate_limit_1.checkExpressRateLimit)(ip, "pdf-report", 30, 60_000);
+    const rate = checkExpressRateLimit(ip, "pdf-report", 30, 60_000);
     if (!rate.allowed) {
         res.status(429).json({
             status: "error",
@@ -304,7 +299,7 @@ app.post("/api/report", async (req, res) => {
         let report = null;
         const body = parsed.data;
         if ("reportId" in body) {
-            report = await (0, reports_repo_1.getReportById)(body.reportId);
+            report = await getReportById(body.reportId);
             if (!report) {
                 res.status(404).json({ status: "error", error: "Report not found." });
                 return;
@@ -328,7 +323,7 @@ app.post("/api/report", async (req, res) => {
                 durationMs: inline.durationMs,
                 createdAt: inline.createdAt || new Date().toISOString(),
                 metadata: {
-                    engineLabel: inline.metadata?.engineLabel || "SHIELDLY Threat Engine",
+                    engineLabel: inline.metadata?.engineLabel || "AVERON Threat Engine",
                     aiProviderUsed: inline.metadata?.aiProviderUsed || "heuristic-only",
                     aiModel: inline.metadata?.aiModel || null,
                     aiFallbackReason: inline.metadata?.aiFallbackReason || null,
@@ -354,7 +349,7 @@ app.post("/api/report", async (req, res) => {
                 durationMs: inline.durationMs,
                 createdAt: inline.createdAt || new Date().toISOString(),
                 metadata: {
-                    engineLabel: inline.metadata?.engineLabel || "SHIELDLY Threat Engine",
+                    engineLabel: inline.metadata?.engineLabel || "AVERON Threat Engine",
                     aiProviderUsed: inline.metadata?.aiProviderUsed || "heuristic-only",
                     aiModel: inline.metadata?.aiModel || null,
                     aiFallbackReason: inline.metadata?.aiFallbackReason || null,
@@ -362,8 +357,8 @@ app.post("/api/report", async (req, res) => {
                 },
             };
         }
-        const pdfBytes = await (0, pdf_generator_1.generateReportPdfBuffer)(report);
-        const filename = `shieldly-threat-report-${report.id.slice(0, 8)}.pdf`;
+        const pdfBytes = await generateReportPdfBuffer(report);
+        const filename = `averon-threat-report-${report.id.slice(0, 8)}.pdf`;
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
         res.setHeader("Content-Length", String(pdfBytes.length));
@@ -380,7 +375,7 @@ app.post("/api/report", async (req, res) => {
 // ─── GET /api/reports (Dashboard List) ────────────────────────────────────────
 app.get("/api/reports", async (_req, res) => {
     try {
-        const data = await (0, reports_repo_1.getDashboardData)(50);
+        const data = await getDashboardData(50);
         res.json({ status: "success", ...data });
     }
     catch (err) {
@@ -394,7 +389,7 @@ app.get("/api/reports", async (_req, res) => {
 // ─── DELETE /api/reports (Clear All) ──────────────────────────────────────────
 app.delete("/api/reports", async (_req, res) => {
     try {
-        const deletedCount = await (0, reports_repo_1.deleteAllReports)();
+        const deletedCount = await deleteAllReports();
         res.json({ status: "success", deletedCount });
     }
     catch (err) {
@@ -409,7 +404,7 @@ app.delete("/api/reports", async (_req, res) => {
 app.get("/api/reports/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const report = id === "latest" ? await (0, reports_repo_1.getLatestReport)() : await (0, reports_repo_1.getReportById)(id);
+        const report = id === "latest" ? await getLatestReport() : await getReportById(id);
         if (!report) {
             res.status(404).json({ status: "error", error: "Report not found." });
             return;
@@ -428,7 +423,7 @@ app.get("/api/reports/:id", async (req, res) => {
 app.delete("/api/reports/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const ok = await (0, reports_repo_1.deleteReportById)(id);
+        const ok = await deleteReportById(id);
         if (!ok) {
             res.status(404).json({ status: "error", error: "Report not found." });
             return;
@@ -453,7 +448,7 @@ app.use((err, _req, res, _next) => {
 });
 app.listen(PORT, () => {
     console.log(`====================================================`);
-    console.log(`  SHIELDLY AI Backend API`);
+    console.log(`  AVERON AI Backend API`);
     console.log(`  Running on: http://localhost:${PORT}`);
     console.log(`  Health Check: http://localhost:${PORT}/health`);
     console.log(`  Status Check: http://localhost:${PORT}/api/status`);

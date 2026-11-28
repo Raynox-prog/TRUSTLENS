@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkExpressRateLimit = checkExpressRateLimit;
 const buckets = new Map();
-function checkExpressRateLimit(clientIp, scope, limit = 30, windowMs = 60_000) {
+export function checkExpressRateLimit(clientIp, scope, limit = 30, windowMs = 60_000) {
     const now = Date.now();
     const key = `${scope}:${clientIp || "local-client"}`;
     if (buckets.size > 5000) {

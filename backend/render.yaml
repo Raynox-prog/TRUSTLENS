@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: shieldly-backend
+    name: averon-backend
     runtime: node
     plan: free
     rootDir: backend

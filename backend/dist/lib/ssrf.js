@@ -1,16 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isPrivateOrReservedIPv4 = isPrivateOrReservedIPv4;
-exports.isPrivateOrReservedIPv6 = isPrivateOrReservedIPv6;
-exports.isPrivateIpAddress = isPrivateIpAddress;
-exports.normalizeAndValidatePublicUrl = normalizeAndValidatePublicUrl;
-exports.assertSafePublicResolution = assertSafePublicResolution;
-exports.inspectSafeRedirectChain = inspectSafeRedirectChain;
-const promises_1 = __importDefault(require("node:dns/promises"));
-const node_net_1 = __importDefault(require("node:net"));
+import dns from "node:dns/promises";
+import net from "node:net";
 const BLOCKED_HOSTNAMES = new Set([
     "localhost",
     "localhost.localdomain",
@@ -30,7 +19,7 @@ const BLOCKED_SUFFIXES = [
     ".intranet",
     ".corp",
 ];
-function isPrivateOrReservedIPv4(ip) {
+export function isPrivateOrReservedIPv4(ip) {
     const parts = ip.split(".").map((n) => Number(n));
     if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
         return true;
@@ -68,7 +57,7 @@ function isPrivateOrReservedIPv4(ip) {
         return true;
     return false;
 }
-function isPrivateOrReservedIPv6(ip) {
+export function isPrivateOrReservedIPv6(ip) {
     const normalized = ip.toLowerCase().replace(/^\[|\]$/g, "");
     // Mapped IPv4 ::ffff:a.b.c.d
     const mappedMatch = normalized.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
@@ -88,16 +77,16 @@ function isPrivateOrReservedIPv6(ip) {
         return true;
     return false;
 }
-function isPrivateIpAddress(ip) {
+export function isPrivateIpAddress(ip) {
     const clean = ip.replace(/^\[|\]$/g, "");
-    const version = node_net_1.default.isIP(clean);
+    const version = net.isIP(clean);
     if (version === 4)
         return isPrivateOrReservedIPv4(clean);
     if (version === 6)
         return isPrivateOrReservedIPv6(clean);
     return false;
 }
-function normalizeAndValidatePublicUrl(rawInput) {
+export function normalizeAndValidatePublicUrl(rawInput) {
     const trimmed = rawInput.trim();
     if (!trimmed || trimmed.length > 2048) {
         return {
@@ -144,7 +133,7 @@ function normalizeAndValidatePublicUrl(rawInput) {
         };
     }
     // Block integer/hex/octal IP obfuscation tricks or bare single-label internal hostnames
-    if (node_net_1.default.isIP(unbracketed) !== 0) {
+    if (net.isIP(unbracketed) !== 0) {
         if (isPrivateIpAddress(unbracketed)) {
             return {
                 ok: false,
@@ -170,9 +159,9 @@ function normalizeAndValidatePublicUrl(rawInput) {
     }
     return { ok: true, url: parsed };
 }
-async function assertSafePublicResolution(hostname) {
+export async function assertSafePublicResolution(hostname) {
     const clean = hostname.replace(/^\[|\]$/g, "");
-    if (node_net_1.default.isIP(clean) !== 0) {
+    if (net.isIP(clean) !== 0) {
         if (isPrivateIpAddress(clean)) {
             return { safe: false, resolvedIps: [clean], reason: "Private/reserved IP blocked" };
         }
@@ -180,7 +169,7 @@ async function assertSafePublicResolution(hostname) {
     }
     try {
         const records = await Promise.race([
-            promises_1.default.lookup(clean, { all: true }),
+            dns.lookup(clean, { all: true }),
             new Promise((_, reject) => setTimeout(() => reject(new Error("DNS lookup timed out")), 2500)),
         ]);
         const ips = records.map((r) => r.address);
@@ -203,7 +192,7 @@ async function assertSafePublicResolution(hostname) {
         };
     }
 }
-async function inspectSafeRedirectChain(initialUrl, maxHops = 3, timeoutMs = 3000) {
+export async function inspectSafeRedirectChain(initialUrl, maxHops = 3, timeoutMs = 3000) {
     const chain = [];
     let currentUrl = initialUrl;
     for (let hop = 0; hop < maxHops; hop++) {

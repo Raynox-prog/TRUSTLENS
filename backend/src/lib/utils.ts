@@ -1,9 +1,7 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { type AnalysisReportDTO, riskLevelLabel } from "./types";
+import { type AnalysisReportDTO, type DetectedThreat, riskLevelLabel } from "./types.js";
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function cn(...inputs: any[]): string {
+  return inputs.flat().filter(Boolean).join(" ");
 }
 
 export function formatDuration(ms: number): string {
@@ -31,7 +29,7 @@ export function formatBytes(bytes: number): string {
 export function buildPlainTextReport(report: AnalysisReportDTO): string {
   const lines: string[] = [
     "============================================================",
-    "SHIELDLY — CYBERSECURITY INVESTIGATION REPORT",
+    "AVERON AI — CYBERSECURITY INVESTIGATION REPORT",
     "Think Before You Click.",
     "============================================================",
     `Report ID:      ${report.id}`,
@@ -63,7 +61,7 @@ export function buildPlainTextReport(report: AnalysisReportDTO): string {
       "No specific threat signatures were triggered. Note: absence of warning signs does not automatically verify legitimacy."
     );
   } else {
-    report.detectedThreats.forEach((t, idx) => {
+    report.detectedThreats.forEach((t: DetectedThreat, idx: number) => {
       lines.push(
         `${idx + 1}. [${t.severity.toUpperCase()}] ${t.type}`,
         `   Evidence:    ${t.evidence}`,
@@ -74,13 +72,13 @@ export function buildPlainTextReport(report: AnalysisReportDTO): string {
   }
 
   lines.push("RECOMMENDED ACTIONS", "------------------------------------------------------------");
-  report.recommendations.forEach((rec, idx) => {
+  report.recommendations.forEach((rec: string, idx: number) => {
     lines.push(`${idx + 1}. ${rec}`);
   });
 
   if (report.limitations.length > 0) {
     lines.push("", "LIMITATIONS & TRANSPARENCY NOTES", "------------------------------------------------------------");
-    report.limitations.forEach((lim) => lines.push(`- ${lim}`));
+    report.limitations.forEach((lim: string) => lines.push(`- ${lim}`));
   }
 
   return lines.join("\n");

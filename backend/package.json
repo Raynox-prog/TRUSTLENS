@@ -1,9 +1,13 @@
 {
-  "name": "shieldly-backend",
+  "name": "averon-backend",
   "version": "1.0.0",
-  "description": "SHIELDLY AI Cybersecurity Threat Detection Backend API",
+  "description": "AVERON AI Cybersecurity Threat Detection Backend API",
   "private": true,
+  "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",

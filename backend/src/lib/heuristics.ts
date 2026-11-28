@@ -5,11 +5,11 @@ import {
   type ThreatSeverity,
   type UrlInspectionDetails,
   scoreToRiskLevel,
-} from "./types";
+} from "./types.js";
 import {
   inspectSafeRedirectChain,
   normalizeAndValidatePublicUrl,
-} from "./ssrf";
+} from "./ssrf.js";
 
 const URL_SHORTENERS = new Set([
   "bit.ly",
@@ -884,7 +884,7 @@ export async function runDeterministicUrlInspection(
     threats.push({
       type: "Multi-Hop Redirect Chain",
       severity: "medium",
-      evidence: redirectResult.chain.map((r) => `${r.status} → ${r.url}`).join(" | "),
+      evidence: redirectResult.chain.map((r: { url: string; status: number }) => `${r.status} → ${r.url}`).join(" | "),
       explanation:
         "Multiple redirects are often used to evade automated link filters before landing on a phishing page.",
     });
@@ -898,7 +898,7 @@ export async function runDeterministicUrlInspection(
 
   const limitations: string[] = [
     "HTTPS encryption only protects data in transit and never guarantees that a website is legitimate.",
-    "SHIELDLY never executes scripts from submitted websites; dynamic client-side phishing content is not rendered.",
+    "AVERON never executes scripts from submitted websites; dynamic client-side phishing content is not rendered.",
   ];
   if (!reputation.checked) {
     limitations.push(reputation.note);

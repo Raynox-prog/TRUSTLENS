@@ -1,4 +1,4 @@
-import type { ImageInspectionDetails } from "./types";
+import type { ImageInspectionDetails } from "./types.js";
 
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 

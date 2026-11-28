@@ -1,22 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.cn = cn;
-exports.formatDuration = formatDuration;
-exports.formatTimestamp = formatTimestamp;
-exports.formatBytes = formatBytes;
-exports.buildPlainTextReport = buildPlainTextReport;
-const clsx_1 = require("clsx");
-const tailwind_merge_1 = require("tailwind-merge");
-const types_1 = require("./types");
-function cn(...inputs) {
-    return (0, tailwind_merge_1.twMerge)((0, clsx_1.clsx)(inputs));
+import { riskLevelLabel } from "./types.js";
+export function cn(...inputs) {
+    return inputs.flat().filter(Boolean).join(" ");
 }
-function formatDuration(ms) {
+export function formatDuration(ms) {
     if (ms < 1000)
         return `${ms}ms`;
     return `${(ms / 1000).toFixed(2)}s`;
 }
-function formatTimestamp(iso) {
+export function formatTimestamp(iso) {
     try {
         return new Intl.DateTimeFormat("en-US", {
             dateStyle: "medium",
@@ -27,17 +18,17 @@ function formatTimestamp(iso) {
         return iso;
     }
 }
-function formatBytes(bytes) {
+export function formatBytes(bytes) {
     if (bytes < 1024)
         return `${bytes} B`;
     if (bytes < 1024 * 1024)
         return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
-function buildPlainTextReport(report) {
+export function buildPlainTextReport(report) {
     const lines = [
         "============================================================",
-        "SHIELDLY — CYBERSECURITY INVESTIGATION REPORT",
+        "AVERON AI — CYBERSECURITY INVESTIGATION REPORT",
         "Think Before You Click.",
         "============================================================",
         `Report ID:      ${report.id}`,
@@ -45,7 +36,7 @@ function buildPlainTextReport(report) {
         `Timestamp:      ${formatTimestamp(report.createdAt)}`,
         `Analysis Time:  ${formatDuration(report.durationMs)}`,
         `Engine:         ${report.metadata.engineLabel}`,
-        `Risk Score:     ${report.riskScore} / 100 (${(0, types_1.riskLevelLabel)(report.riskLevel).toUpperCase()})`,
+        `Risk Score:     ${report.riskScore} / 100 (${riskLevelLabel(report.riskLevel).toUpperCase()})`,
         `Confidence:     ${report.confidence.toUpperCase()}`,
         "",
         "VERDICT",

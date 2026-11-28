@@ -1,14 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractUrlsFromText = extractUrlsFromText;
-exports.runDeterministicTextAnalysis = runDeterministicTextAnalysis;
-exports.runDeterministicUrlInspection = runDeterministicUrlInspection;
-const node_net_1 = __importDefault(require("node:net"));
-const types_1 = require("./types");
-const ssrf_1 = require("./ssrf");
+import net from "node:net";
+import { scoreToRiskLevel, } from "./types.js";
+import { inspectSafeRedirectChain, normalizeAndValidatePublicUrl, } from "./ssrf.js";
 const URL_SHORTENERS = new Set([
     "bit.ly",
     "tinyurl.com",
@@ -134,7 +126,7 @@ function levenshtein(a, b) {
 }
 function parseDomainParts(hostname) {
     const clean = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-    if (node_net_1.default.isIP(clean) !== 0) {
+    if (net.isIP(clean) !== 0) {
         return { registeredDomain: clean, subdomains: [], tld: "" };
     }
     const labels = clean.split(".").filter(Boolean);
@@ -165,7 +157,7 @@ function parseDomainParts(hostname) {
         tld: labels[labels.length - 1] ?? "",
     };
 }
-function extractUrlsFromText(text) {
+export function extractUrlsFromText(text) {
     const fullUrlRegex = /https?:\/\/[^\s"'<>()]+/gi;
     const fullMatches = (text.match(fullUrlRegex) ?? []).map((u) => u.replace(/[.,!?;:]+$/, ""));
     // Remove full URLs and email addresses before scanning for bare domains so we never double-count
@@ -336,7 +328,7 @@ function extractSnippet(text, regex) {
     const suffix = end < text.length ? "…" : "";
     return `${prefix}${text.slice(start, end).replace(/\s+/g, " ").trim()}${suffix}`;
 }
-function runDeterministicTextAnalysis(text) {
+export function runDeterministicTextAnalysis(text) {
     const threats = [];
     const recommendations = new Set();
     let score = 0;
@@ -358,7 +350,7 @@ function runDeterministicTextAnalysis(text) {
     // Inspect any URLs embedded inside the message
     const extractedUrls = extractUrlsFromText(text);
     for (const rawUrl of extractedUrls) {
-        const validated = (0, ssrf_1.normalizeAndValidatePublicUrl)(rawUrl);
+        const validated = normalizeAndValidatePublicUrl(rawUrl);
         if (!validated.ok)
             continue;
         const urlEval = evaluateUrlLexicalSignals(validated.url);
@@ -380,7 +372,7 @@ function runDeterministicTextAnalysis(text) {
         score = Math.min(98, Math.round(70 + (score - 70) * 0.55));
     }
     const finalScore = Math.max(0, Math.min(100, Math.round(score)));
-    const riskLevel = (0, types_1.scoreToRiskLevel)(finalScore);
+    const riskLevel = scoreToRiskLevel(finalScore);
     let verdict;
     let summary;
     if (riskLevel === "critical") {
@@ -423,7 +415,7 @@ function runDeterministicTextAnalysis(text) {
 function evaluateUrlLexicalSignals(parsed) {
     const hostname = parsed.hostname.toLowerCase();
     const unbracketed = hostname.replace(/^\[|\]$/g, "");
-    const isIpAddress = node_net_1.default.isIP(unbracketed) !== 0;
+    const isIpAddress = net.isIP(unbracketed) !== 0;
     const { registeredDomain, subdomains, tld } = parseDomainParts(hostname);
     const isPunycode = hostname.includes("xn--");
     const isShortener = URL_SHORTENERS.has(registeredDomain);
@@ -592,11 +584,11 @@ async function checkGoogleSafeBrowsing(url) {
         };
     }
 }
-async function runDeterministicUrlInspection(rawUrl, parsed) {
+export async function runDeterministicUrlInspection(rawUrl, parsed) {
     const lexical = evaluateUrlLexicalSignals(parsed);
     // Run SSRF-safe redirect inspection and optional Google Safe Browsing check in parallel
     const [redirectResult, reputation] = await Promise.all([
-        (0, ssrf_1.inspectSafeRedirectChain)(parsed),
+        inspectSafeRedirectChain(parsed),
         checkGoogleSafeBrowsing(parsed.toString()),
     ]);
     const inspection = {
@@ -734,10 +726,10 @@ async function runDeterministicUrlInspection(rawUrl, parsed) {
         score = Math.min(99, Math.round(72 + (score - 72) * 0.58));
     }
     const finalScore = Math.max(0, Math.min(100, Math.round(score)));
-    const riskLevel = (0, types_1.scoreToRiskLevel)(finalScore);
+    const riskLevel = scoreToRiskLevel(finalScore);
     const limitations = [
         "HTTPS encryption only protects data in transit and never guarantees that a website is legitimate.",
-        "SHIELDLY never executes scripts from submitted websites; dynamic client-side phishing content is not rendered.",
+        "AVERON never executes scripts from submitted websites; dynamic client-side phishing content is not rendered.",
     ];
     if (!reputation.checked) {
         limitations.push(reputation.note);

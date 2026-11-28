@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateReportPdfBuffer = generateReportPdfBuffer;
-const pdf_lib_1 = require("pdf-lib");
-const types_1 = require("./types");
-const utils_1 = require("./utils");
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { riskLevelLabel } from "./types.js";
+import { formatDuration, formatTimestamp } from "./utils.js";
 function sanitizePdfText(input) {
     // StandardFonts.Helvetica supports WinAnsi (Latin-1); replace non-WinAnsi symbols cleanly
     return input
@@ -60,25 +57,25 @@ function wrapText(text, font, fontSize, maxWidth) {
     }
     return lines;
 }
-async function generateReportPdfBuffer(report) {
-    const pdfDoc = await pdf_lib_1.PDFDocument.create();
-    pdfDoc.setTitle(`SHIELDLY Investigation Report - ${report.id}`);
-    pdfDoc.setAuthor("SHIELDLY AI Cybersecurity Platform");
+export async function generateReportPdfBuffer(report) {
+    const pdfDoc = await PDFDocument.create();
+    pdfDoc.setTitle(`AVERON AI Investigation Report - ${report.id}`);
+    pdfDoc.setAuthor("AVERON AI Cybersecurity Platform");
     pdfDoc.setSubject("Scam & Phishing Threat Investigation Report");
-    const fontRegular = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
-    const fontBold = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const PAGE_W = 595.28; // A4
     const PAGE_H = 841.89;
     const MARGIN = 46;
     const CONTENT_W = PAGE_W - MARGIN * 2;
-    const COLOR_DEEP_FOREST = (0, pdf_lib_1.rgb)(16 / 255, 43 / 255, 34 / 255); // #102B22
-    const COLOR_FOREST = (0, pdf_lib_1.rgb)(23 / 255, 61 / 255, 48 / 255); // #173D30
-    const COLOR_CREAM = (0, pdf_lib_1.rgb)(240 / 255, 229 / 255, 208 / 255); // #F0E5D0
-    const COLOR_PURPLE = (0, pdf_lib_1.rgb)(146 / 255, 87 / 255, 246 / 255); // #9257F6
-    const COLOR_TEXT_DARK = (0, pdf_lib_1.rgb)(18 / 255, 34 / 255, 28 / 255);
-    const COLOR_TEXT_MUTED = (0, pdf_lib_1.rgb)(86 / 255, 104 / 255, 96 / 255);
-    const COLOR_BORDER = (0, pdf_lib_1.rgb)(216 / 255, 206 / 255, 188 / 255);
-    const COLOR_WHITE = (0, pdf_lib_1.rgb)(1, 1, 1);
+    const COLOR_DEEP_FOREST = rgb(16 / 255, 43 / 255, 34 / 255); // #102B22
+    const COLOR_FOREST = rgb(23 / 255, 61 / 255, 48 / 255); // #173D30
+    const COLOR_CREAM = rgb(240 / 255, 229 / 255, 208 / 255); // #F0E5D0
+    const COLOR_PURPLE = rgb(146 / 255, 87 / 255, 246 / 255); // #9257F6
+    const COLOR_TEXT_DARK = rgb(18 / 255, 34 / 255, 28 / 255);
+    const COLOR_TEXT_MUTED = rgb(86 / 255, 104 / 255, 96 / 255);
+    const COLOR_BORDER = rgb(216 / 255, 206 / 255, 188 / 255);
+    const COLOR_WHITE = rgb(1, 1, 1);
     let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
     let y = PAGE_H;
     const addNewPage = () => {
@@ -114,7 +111,7 @@ async function generateReportPdfBuffer(report) {
         height: 4,
         color: COLOR_PURPLE,
     });
-    page.drawText("SHIELDLY", {
+    page.drawText("AVERON AI", {
         x: MARGIN,
         y: PAGE_H - 42,
         size: 22,
@@ -126,14 +123,14 @@ async function generateReportPdfBuffer(report) {
         y: PAGE_H - 62,
         size: 8.5,
         font: fontBold,
-        color: (0, pdf_lib_1.rgb)(185 / 255, 169 / 255, 233 / 255),
+        color: rgb(185 / 255, 169 / 255, 233 / 255),
     });
     page.drawText(sanitizePdfText(`Report ID: ${report.id}`), {
         x: MARGIN,
         y: PAGE_H - 78,
         size: 8,
         font: fontRegular,
-        color: (0, pdf_lib_1.rgb)(184 / 255, 198 / 255, 187 / 255),
+        color: rgb(184 / 255, 198 / 255, 187 / 255),
     });
     y = PAGE_H - headerH - 26;
     // Risk Score Summary Card
@@ -162,7 +159,7 @@ async function generateReportPdfBuffer(report) {
         font: fontBold,
         color: COLOR_WHITE,
     });
-    page.drawText((0, types_1.riskLevelLabel)(report.riskLevel).toUpperCase(), {
+    page.drawText(riskLevelLabel(report.riskLevel).toUpperCase(), {
         x: MARGIN + 24,
         y: y - 64,
         size: 8.5,
@@ -170,14 +167,14 @@ async function generateReportPdfBuffer(report) {
         color: COLOR_CREAM,
     });
     const metaX = MARGIN + 140;
-    page.drawText(sanitizePdfText(`Type: ${report.analysisType.toUpperCase()}   |   Confidence: ${report.confidence.toUpperCase()}   |   Duration: ${(0, utils_1.formatDuration)(report.durationMs)}`), {
+    page.drawText(sanitizePdfText(`Type: ${report.analysisType.toUpperCase()}   |   Confidence: ${report.confidence.toUpperCase()}   |   Duration: ${formatDuration(report.durationMs)}`), {
         x: metaX,
         y: y - 26,
         size: 8.5,
         font: fontBold,
         color: COLOR_FOREST,
     });
-    page.drawText(sanitizePdfText(`Generated: ${(0, utils_1.formatTimestamp)(report.createdAt)}`), {
+    page.drawText(sanitizePdfText(`Generated: ${formatTimestamp(report.createdAt)}`), {
         x: metaX,
         y: y - 42,
         size: 8.5,
@@ -283,7 +280,7 @@ async function generateReportPdfBuffer(report) {
             thickness: 0.5,
             color: COLOR_BORDER,
         });
-        p.drawText("SHIELDLY — Think Before You Click. Automated assessment assists human judgment and never guarantees legitimacy.", {
+        p.drawText("AVERON AI — Think Before You Click. Automated assessment assists human judgment and never guarantees legitimacy.", {
             x: MARGIN,
             y: 20,
             size: 7.5,

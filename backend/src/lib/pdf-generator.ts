@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { type AnalysisReportDTO, riskLevelLabel } from "./types";
-import { formatDuration, formatTimestamp } from "./utils";
+import { type AnalysisReportDTO, type DetectedThreat, riskLevelLabel } from "./types.js";
+import { formatDuration, formatTimestamp } from "./utils.js";
 
 function sanitizePdfText(input: string): string {
   // StandardFonts.Helvetica supports WinAnsi (Latin-1); replace non-WinAnsi symbols cleanly
@@ -65,8 +65,8 @@ export async function generateReportPdfBuffer(
   report: AnalysisReportDTO
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
-  pdfDoc.setTitle(`SHIELDLY Investigation Report - ${report.id}`);
-  pdfDoc.setAuthor("SHIELDLY AI Cybersecurity Platform");
+  pdfDoc.setTitle(`AVERON AI Investigation Report - ${report.id}`);
+  pdfDoc.setAuthor("AVERON AI Cybersecurity Platform");
   pdfDoc.setSubject("Scam & Phishing Threat Investigation Report");
 
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -125,7 +125,7 @@ export async function generateReportPdfBuffer(
     color: COLOR_PURPLE,
   });
 
-  page.drawText("SHIELDLY", {
+  page.drawText("AVERON AI", {
     x: MARGIN,
     y: PAGE_H - 42,
     size: 22,
@@ -286,7 +286,7 @@ export async function generateReportPdfBuffer(
       { size: 9.5, color: COLOR_TEXT_MUTED }
     );
   } else {
-    report.detectedThreats.forEach((threat, idx) => {
+    report.detectedThreats.forEach((threat: DetectedThreat, idx: number) => {
       ensureSpace(62);
       drawParagraph(
         `${idx + 1}. ${threat.type}  [${threat.severity.toUpperCase()} SEVERITY]`,
@@ -307,14 +307,14 @@ export async function generateReportPdfBuffer(
 
   // Recommended Actions
   drawSectionTitle("Recommended Safety Actions");
-  report.recommendations.forEach((rec, idx) => {
+  report.recommendations.forEach((rec: string, idx: number) => {
     drawParagraph(`${idx + 1}. ${rec}`, { size: 9.5, indent: 6 });
   });
 
   // Limitations
   if (report.limitations.length > 0) {
     drawSectionTitle("Transparency & Limitations");
-    report.limitations.forEach((lim) => {
+    report.limitations.forEach((lim: string) => {
       drawParagraph(`- ${lim}`, { size: 8.8, color: COLOR_TEXT_MUTED, indent: 6 });
     });
   }
@@ -329,7 +329,7 @@ export async function generateReportPdfBuffer(
       color: COLOR_BORDER,
     });
     p.drawText(
-      "SHIELDLY — Think Before You Click. Automated assessment assists human judgment and never guarantees legitimacy.",
+      "AVERON AI — Think Before You Click. Automated assessment assists human judgment and never guarantees legitimacy.",
       {
         x: MARGIN,
         y: 20,

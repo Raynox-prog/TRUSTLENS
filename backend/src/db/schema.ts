@@ -7,7 +7,7 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
-import type { AnalysisMetadata, DetectedThreat } from "../lib/types";
+import type { AnalysisMetadata, DetectedThreat } from "../lib/types.js";
 
 export const analysisReports = pgTable(
   "analysis_reports",

@@ -1,9 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_IMAGE_BYTES = void 0;
-exports.sanitizeFilename = sanitizeFilename;
-exports.validateUploadedImage = validateUploadedImage;
-exports.MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 const ALLOWED_MIMES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
 function detectSignature(buf) {
     if (buf.length < 12)
@@ -111,15 +106,15 @@ function extractPngTextChunks(buf) {
         return null;
     }
 }
-function sanitizeFilename(name) {
+export function sanitizeFilename(name) {
     const base = name.split(/[/\\]/).pop() ?? "screenshot";
     return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100) || "screenshot";
 }
-function validateUploadedImage(buffer, declaredMime, originalName) {
+export function validateUploadedImage(buffer, declaredMime, originalName) {
     if (buffer.length === 0) {
         return { ok: false, error: "Uploaded image file is empty." };
     }
-    if (buffer.length > exports.MAX_IMAGE_BYTES) {
+    if (buffer.length > MAX_IMAGE_BYTES) {
         return {
             ok: false,
             error: "File exceeds maximum allowed size of 8 MB.",

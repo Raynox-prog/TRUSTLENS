@@ -1,30 +1,25 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EXAMPLE_URLS = exports.EXAMPLE_TEXT_MESSAGES = exports.SUPPORTED_SCAM_CATEGORIES = exports.AIOutputSchema = exports.DetectedThreatSchema = exports.AnalysisTypeSchema = exports.ConfidenceSchema = exports.SeveritySchema = exports.RiskLevelSchema = void 0;
-exports.scoreToRiskLevel = scoreToRiskLevel;
-exports.riskLevelLabel = riskLevelLabel;
-const zod_1 = require("zod");
-exports.RiskLevelSchema = zod_1.z.enum(["low", "moderate", "high", "critical"]);
-exports.SeveritySchema = zod_1.z.enum(["low", "medium", "high", "critical"]);
-exports.ConfidenceSchema = zod_1.z.enum(["low", "medium", "high"]);
-exports.AnalysisTypeSchema = zod_1.z.enum(["text", "image", "url"]);
-exports.DetectedThreatSchema = zod_1.z.object({
-    type: zod_1.z.string().min(1).max(120),
-    severity: exports.SeveritySchema,
-    evidence: zod_1.z.string().min(1).max(600),
-    explanation: zod_1.z.string().min(1).max(800),
+import { z } from "zod";
+export const RiskLevelSchema = z.enum(["low", "moderate", "high", "critical"]);
+export const SeveritySchema = z.enum(["low", "medium", "high", "critical"]);
+export const ConfidenceSchema = z.enum(["low", "medium", "high"]);
+export const AnalysisTypeSchema = z.enum(["text", "image", "url"]);
+export const DetectedThreatSchema = z.object({
+    type: z.string().min(1).max(120),
+    severity: SeveritySchema,
+    evidence: z.string().min(1).max(600),
+    explanation: z.string().min(1).max(800),
 });
-exports.AIOutputSchema = zod_1.z.object({
-    riskLevel: exports.RiskLevelSchema,
-    riskScore: zod_1.z.number().int().min(0).max(100),
-    verdict: zod_1.z.string().min(1).max(300),
-    summary: zod_1.z.string().min(1).max(1200),
-    detectedThreats: zod_1.z.array(exports.DetectedThreatSchema).max(20),
-    recommendations: zod_1.z.array(zod_1.z.string().min(1).max(400)).min(1).max(12),
-    confidence: exports.ConfidenceSchema,
-    limitations: zod_1.z.array(zod_1.z.string().min(1).max(400)).max(12),
+export const AIOutputSchema = z.object({
+    riskLevel: RiskLevelSchema,
+    riskScore: z.number().int().min(0).max(100),
+    verdict: z.string().min(1).max(300),
+    summary: z.string().min(1).max(1200),
+    detectedThreats: z.array(DetectedThreatSchema).max(20),
+    recommendations: z.array(z.string().min(1).max(400)).min(1).max(12),
+    confidence: ConfidenceSchema,
+    limitations: z.array(z.string().min(1).max(400)).max(12),
 });
-function scoreToRiskLevel(score) {
+export function scoreToRiskLevel(score) {
     const clamped = Math.max(0, Math.min(100, Math.round(score)));
     if (clamped <= 29)
         return "low";
@@ -34,7 +29,7 @@ function scoreToRiskLevel(score) {
         return "high";
     return "critical";
 }
-function riskLevelLabel(level) {
+export function riskLevelLabel(level) {
     switch (level) {
         case "low":
             return "Low Risk";
@@ -46,7 +41,7 @@ function riskLevelLabel(level) {
             return "Critical Risk";
     }
 }
-exports.SUPPORTED_SCAM_CATEGORIES = [
+export const SUPPORTED_SCAM_CATEGORIES = [
     {
         id: "phishing",
         name: "Phishing",
@@ -167,7 +162,7 @@ exports.SUPPORTED_SCAM_CATEGORIES = [
         exampleText: "Mandatory Verification: Reply with a photo of your passport, Social Security Number, mother's maiden name, and bank routing number to prevent service termination.",
     },
 ];
-exports.EXAMPLE_TEXT_MESSAGES = [
+export const EXAMPLE_TEXT_MESSAGES = [
     {
         label: "Fake Bank KYC + OTP",
         category: "Banking & OTP Theft",
@@ -194,7 +189,7 @@ exports.EXAMPLE_TEXT_MESSAGES = [
         text: "Remote Hiring Alert! Earn $400 daily reviewing products from home. Message our HR manager on WhatsApp/Telegram and deposit $150 USDT into the merchant portal for guaranteed 35% daily risk-free returns!",
     },
 ];
-exports.EXAMPLE_URLS = [
+export const EXAMPLE_URLS = [
     {
         label: "Typosquatted PayPal",
         url: "http://paypa1-security-center.verify-login.xyz/account/update",

@@ -3,18 +3,18 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import multer from "multer";
 import { z } from "zod";
-import { checkExpressRateLimit } from "./lib/rate-limit";
-import { normalizeAndValidatePublicUrl } from "./lib/ssrf";
+import { checkExpressRateLimit } from "./lib/rate-limit.js";
+import { normalizeAndValidatePublicUrl } from "./lib/ssrf.js";
 import {
   analyzeUrlWithAI,
   analyzeTextWithAI,
   analyzeImageWithAI,
   getServerCapabilities,
-} from "./lib/ai-service";
+} from "./lib/ai-service.js";
 import {
   MAX_IMAGE_BYTES,
   validateUploadedImage,
-} from "./lib/image-validator";
+} from "./lib/image-validator.js";
 import {
   saveAnalysisReport,
   getReportById,
@@ -22,15 +22,15 @@ import {
   deleteReportById,
   deleteAllReports,
   getDashboardData,
-} from "./lib/reports-repo";
-import { generateReportPdfBuffer } from "./lib/pdf-generator";
+} from "./lib/reports-repo.js";
+import { generateReportPdfBuffer } from "./lib/pdf-generator.js";
 import {
   AnalysisTypeSchema,
   ConfidenceSchema,
   DetectedThreatSchema,
   RiskLevelSchema,
   type AnalysisReportDTO,
-} from "./lib/types";
+} from "./lib/types.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -84,7 +84,7 @@ function getClientIp(req: Request): string {
 app.get(["/", "/health", "/api/health"], (_req: Request, res: Response) => {
   res.json({
     status: "ok",
-    service: "SHIELDLY AI Backend API",
+    service: "AVERON AI Backend API",
     version: "2.0.0",
     engine: "Zero-Trust Threat Defense Engine",
     timestamp: new Date().toISOString(),
@@ -333,7 +333,7 @@ const InlineReportSchema = z.object({
   createdAt: z.string().optional(),
   metadata: z
     .object({
-      engineLabel: z.string().default("SHIELDLY Analysis Engine"),
+      engineLabel: z.string().default("AVERON Analysis Engine"),
       aiProviderUsed: z
         .enum(["gemini", "openai", "heuristic-only"])
         .default("heuristic-only"),
@@ -398,7 +398,7 @@ app.post("/api/report", async (req: Request, res: Response) => {
         durationMs: inline.durationMs,
         createdAt: inline.createdAt || new Date().toISOString(),
         metadata: {
-          engineLabel: inline.metadata?.engineLabel || "SHIELDLY Threat Engine",
+          engineLabel: inline.metadata?.engineLabel || "AVERON Threat Engine",
           aiProviderUsed: inline.metadata?.aiProviderUsed || "heuristic-only",
           aiModel: inline.metadata?.aiModel || null,
           aiFallbackReason: inline.metadata?.aiFallbackReason || null,
@@ -407,7 +407,7 @@ app.post("/api/report", async (req: Request, res: Response) => {
         },
       };
     } else {
-      const inline = body;
+      const inline = body as z.infer<typeof InlineReportSchema>;
       report = {
         id: inline.id,
         status: "success",
@@ -424,7 +424,7 @@ app.post("/api/report", async (req: Request, res: Response) => {
         durationMs: inline.durationMs,
         createdAt: inline.createdAt || new Date().toISOString(),
         metadata: {
-          engineLabel: inline.metadata?.engineLabel || "SHIELDLY Threat Engine",
+          engineLabel: inline.metadata?.engineLabel || "AVERON Threat Engine",
           aiProviderUsed: inline.metadata?.aiProviderUsed || "heuristic-only",
           aiModel: inline.metadata?.aiModel || null,
           aiFallbackReason: inline.metadata?.aiFallbackReason || null,
@@ -435,7 +435,7 @@ app.post("/api/report", async (req: Request, res: Response) => {
     }
 
     const pdfBytes = await generateReportPdfBuffer(report);
-    const filename = `shieldly-threat-report-${report.id.slice(0, 8)}.pdf`;
+    const filename = `averon-threat-report-${report.id.slice(0, 8)}.pdf`;
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -537,7 +537,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`  SHIELDLY AI Backend API`);
+  console.log(`  AVERON AI Backend API`);
   console.log(`  Running on: http://localhost:${PORT}`);
   console.log(`  Health Check: http://localhost:${PORT}/health`);
   console.log(`  Status Check: http://localhost:${PORT}/api/status`);

@@ -1,16 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.rowToReportDTO = rowToReportDTO;
-exports.saveAnalysisReport = saveAnalysisReport;
-exports.getReportById = getReportById;
-exports.getLatestReport = getLatestReport;
-exports.deleteReportById = deleteReportById;
-exports.deleteAllReports = deleteAllReports;
-exports.getDashboardData = getDashboardData;
-const node_crypto_1 = require("node:crypto");
-const drizzle_orm_1 = require("drizzle-orm");
-const db_1 = require("../db");
-const schema_1 = require("../db/schema");
+import { randomUUID } from "node:crypto";
+import { desc, eq, sql } from "drizzle-orm";
+import { db, pool } from "../db/index.js";
+import { analysisReports } from "../db/schema.js";
 // In-Memory store fallback
 const memoryStore = new Map();
 let isPostgresAvailable = null;
@@ -24,13 +15,13 @@ async function checkPostgres() {
         return false;
     }
     try {
-        const client = await db_1.pool.connect();
+        const client = await pool.connect();
         client.release();
         isPostgresAvailable = true;
         return true;
     }
     catch (err) {
-        console.warn("[SHIELDLY Backend] PostgreSQL not reachable. Operating in memory-store mode.");
+        console.warn("[AVERON AI Backend] PostgreSQL not reachable. Operating in memory-store mode.");
         isPostgresAvailable = false;
         return false;
     }
@@ -41,7 +32,7 @@ async function ensureReportsTable() {
         return;
     if (!schemaReadyPromise) {
         schemaReadyPromise = (async () => {
-            await db_1.db.execute((0, drizzle_orm_1.sql) `
+            await db.execute(sql `
         CREATE TABLE IF NOT EXISTS analysis_reports (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
           analysis_type text NOT NULL,
@@ -59,17 +50,17 @@ async function ensureReportsTable() {
           created_at timestamp with time zone DEFAULT now() NOT NULL
         )
       `);
-            await db_1.db.execute((0, drizzle_orm_1.sql) `CREATE INDEX IF NOT EXISTS analysis_reports_created_at_idx ON analysis_reports (created_at)`);
-            await db_1.db.execute((0, drizzle_orm_1.sql) `CREATE INDEX IF NOT EXISTS analysis_reports_risk_level_idx ON analysis_reports (risk_level)`);
-            await db_1.db.execute((0, drizzle_orm_1.sql) `CREATE INDEX IF NOT EXISTS analysis_reports_type_idx ON analysis_reports (analysis_type)`);
+            await db.execute(sql `CREATE INDEX IF NOT EXISTS analysis_reports_created_at_idx ON analysis_reports (created_at)`);
+            await db.execute(sql `CREATE INDEX IF NOT EXISTS analysis_reports_risk_level_idx ON analysis_reports (risk_level)`);
+            await db.execute(sql `CREATE INDEX IF NOT EXISTS analysis_reports_type_idx ON analysis_reports (analysis_type)`);
         })().catch((err) => {
-            console.error("[SHIELDLY Backend] Failed to initialize table schema:", err);
+            console.error("[AVERON AI Backend] Failed to initialize table schema:", err);
             isPostgresAvailable = false;
         });
     }
     await schemaReadyPromise;
 }
-function rowToReportDTO(row) {
+export function rowToReportDTO(row) {
     return {
         id: row.id,
         status: "success",
@@ -88,13 +79,13 @@ function rowToReportDTO(row) {
         createdAt: row.createdAt.toISOString(),
     };
 }
-async function saveAnalysisReport(params) {
+export async function saveAnalysisReport(params) {
     const pgOk = await checkPostgres();
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const [inserted] = await db_1.db
-                .insert(schema_1.analysisReports)
+            const [inserted] = await db
+                .insert(analysisReports)
                 .values({
                 analysisType: params.analysisType,
                 inputSummary: params.inputSummary.slice(0, 320),
@@ -117,11 +108,11 @@ async function saveAnalysisReport(params) {
             }
         }
         catch (err) {
-            console.warn("[SHIELDLY Backend] Postgres insert failed, falling back to memory:", err);
+            console.warn("[AVERON AI Backend] Postgres insert failed, falling back to memory:", err);
         }
     }
     // Memory fallback
-    const reportId = (0, node_crypto_1.randomUUID)();
+    const reportId = randomUUID();
     const dto = {
         id: reportId,
         status: "success",
@@ -147,7 +138,7 @@ async function saveAnalysisReport(params) {
     }
     return dto;
 }
-async function getReportById(id) {
+export async function getReportById(id) {
     // Check memory first
     if (memoryStore.has(id)) {
         return memoryStore.get(id);
@@ -156,10 +147,10 @@ async function getReportById(id) {
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const rows = await db_1.db
+            const rows = await db
                 .select()
-                .from(schema_1.analysisReports)
-                .where((0, drizzle_orm_1.eq)(schema_1.analysisReports.id, id))
+                .from(analysisReports)
+                .where(eq(analysisReports.id, id))
                 .limit(1);
             if (rows.length > 0) {
                 const dto = rowToReportDTO(rows[0]);
@@ -173,15 +164,15 @@ async function getReportById(id) {
     }
     return null;
 }
-async function getLatestReport() {
+export async function getLatestReport() {
     const pgOk = await checkPostgres();
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const rows = await db_1.db
+            const rows = await db
                 .select()
-                .from(schema_1.analysisReports)
-                .orderBy((0, drizzle_orm_1.desc)(schema_1.analysisReports.createdAt))
+                .from(analysisReports)
+                .orderBy(desc(analysisReports.createdAt))
                 .limit(1);
             if (rows.length > 0) {
                 return rowToReportDTO(rows[0]);
@@ -198,16 +189,16 @@ async function getLatestReport() {
     }
     return null;
 }
-async function deleteReportById(id) {
+export async function deleteReportById(id) {
     let deletedFromMem = memoryStore.delete(id);
     const pgOk = await checkPostgres();
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const deleted = await db_1.db
-                .delete(schema_1.analysisReports)
-                .where((0, drizzle_orm_1.eq)(schema_1.analysisReports.id, id))
-                .returning({ id: schema_1.analysisReports.id });
+            const deleted = await db
+                .delete(analysisReports)
+                .where(eq(analysisReports.id, id))
+                .returning({ id: analysisReports.id });
             return deleted.length > 0 || deletedFromMem;
         }
         catch {
@@ -216,16 +207,16 @@ async function deleteReportById(id) {
     }
     return deletedFromMem;
 }
-async function deleteAllReports() {
+export async function deleteAllReports() {
     const count = memoryStore.size;
     memoryStore.clear();
     const pgOk = await checkPostgres();
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const deleted = await db_1.db
-                .delete(schema_1.analysisReports)
-                .returning({ id: schema_1.analysisReports.id });
+            const deleted = await db
+                .delete(analysisReports)
+                .returning({ id: analysisReports.id });
             return Math.max(deleted.length, count);
         }
         catch {
@@ -234,16 +225,16 @@ async function deleteAllReports() {
     }
     return count;
 }
-async function getDashboardData(limit = 50) {
+export async function getDashboardData(limit = 50) {
     let dtos = [];
     const pgOk = await checkPostgres();
     if (pgOk) {
         try {
             await ensureReportsTable();
-            const allRows = await db_1.db
+            const allRows = await db
                 .select()
-                .from(schema_1.analysisReports)
-                .orderBy((0, drizzle_orm_1.desc)(schema_1.analysisReports.createdAt))
+                .from(analysisReports)
+                .orderBy(desc(analysisReports.createdAt))
                 .limit(200);
             dtos = allRows.map(rowToReportDTO);
         }

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { desc, eq, sql } from "drizzle-orm";
-import { db, pool } from "../db";
-import { analysisReports, type AnalysisReportRow } from "../db/schema";
+import { db, pool } from "../db/index.js";
+import { analysisReports, type AnalysisReportRow } from "../db/schema.js";
 import type {
   AIOutput,
   AnalysisMetadata,
@@ -9,7 +9,7 @@ import type {
   AnalysisType,
   ConfidenceLevel,
   RiskLevel,
-} from "./types";
+} from "./types.js";
 
 // In-Memory store fallback
 const memoryStore = new Map<string, AnalysisReportDTO>();
@@ -33,7 +33,7 @@ async function checkPostgres(): Promise<boolean> {
     return true;
   } catch (err) {
     console.warn(
-      "[SHIELDLY Backend] PostgreSQL not reachable. Operating in memory-store mode."
+      "[AVERON AI Backend] PostgreSQL not reachable. Operating in memory-store mode."
     );
     isPostgresAvailable = false;
     return false;
@@ -74,7 +74,7 @@ async function ensureReportsTable(): Promise<void> {
         sql`CREATE INDEX IF NOT EXISTS analysis_reports_type_idx ON analysis_reports (analysis_type)`
       );
     })().catch((err) => {
-      console.error("[SHIELDLY Backend] Failed to initialize table schema:", err);
+      console.error("[AVERON AI Backend] Failed to initialize table schema:", err);
       isPostgresAvailable = false;
     });
   }
@@ -137,7 +137,7 @@ export async function saveAnalysisReport(params: {
         return dto;
       }
     } catch (err) {
-      console.warn("[SHIELDLY Backend] Postgres insert failed, falling back to memory:", err);
+      console.warn("[AVERON AI Backend] Postgres insert failed, falling back to memory:", err);
     }
   }
 
