@@ -446,11 +446,15 @@ app.use((err, _req, res, _next) => {
         error: "Internal server error.",
     });
 });
-app.listen(PORT, () => {
-    console.log(`====================================================`);
-    console.log(`  AVERON AI Backend API`);
-    console.log(`  Running on: http://localhost:${PORT}`);
-    console.log(`  Health Check: http://localhost:${PORT}/health`);
-    console.log(`  Status Check: http://localhost:${PORT}/api/status`);
-    console.log(`====================================================`);
-});
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`====================================================`);
+        console.log(`  AVERON AI Backend API`);
+        console.log(`  Running on: http://localhost:${PORT}`);
+        console.log(`  Health Check: http://localhost:${PORT}/health`);
+        console.log(`  Status Check: http://localhost:${PORT}/api/status`);
+        console.log(`====================================================`);
+    });
+}
+export { app };
+export default app;
